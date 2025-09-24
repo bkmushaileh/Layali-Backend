@@ -13,12 +13,14 @@ export const signup = async (
   next: NextFunction
 ) => {
   try {
-    const { email, password } = req.body || {};
+    const { email, password, username, role } = req.body || {};
     const image = req.file ? req.file.path : null;
 
-    if (!email || !password) {
+    if (!email || !password || !username) {
       return next(
-        invalidCredentialsErrorHandler("Email and password are required")
+        invalidCredentialsErrorHandler(
+          "Email, password, and username are required"
+        )
       );
     }
     if (!validator.isEmail(email)) {
