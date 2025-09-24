@@ -1,5 +1,4 @@
 import { NextFunction, Request, Response } from "express";
-
 import validator from "validator";
 import bcrypt from "bcrypt";
 import { invalidCredentialsErrorHandler } from "../../Utils/errors";
@@ -7,6 +6,7 @@ import User from "../../Models/User";
 import { generateHashPassword } from "../../Utils/hashPassword";
 import { generatetoken } from "../../Utils/jwt";
 
+const ALLOWED_ROLES = new Set(["Admin", "Vendor", "Normal"]);
 export const signup = async (
   req: Request,
   res: Response,
@@ -15,11 +15,12 @@ export const signup = async (
   try {
     const { email, password, username, role } = req.body || {};
     const image = req.file ? req.file.path : null;
+    let finalRole = "Normal";
 
-    if (!email || !password || !username) {
+    if (!email || !password || !username || !image) {
       return next(
         invalidCredentialsErrorHandler(
-          "Email, password, and username are required"
+          "Email, password, username and image are required."
         )
       );
     }
@@ -30,12 +31,30 @@ export const signup = async (
     if (emailExists) {
       return next({ status: 409, message: "Email already exists" });
     }
+    const userNameExists = await User.findOne({ username });
+    if (userNameExists) {
+      return next({ status: 409, message: "Username already exists" });
+    }
+
+    if (role) {
+      if (!ALLOWED_ROLES.has(role)) {
+        return next({ status: 400, message: "Invalid role." });
+      }
+      if (role === "Admin") {
+        return next({ status: 401, message: "Unauthorized role selection." });
+      }
+      finalRole = role;
+    }
     const hashedPassword = await generateHashPassword(password);
 
     const newUser = await User.create({
+      role: finalRole,
+      username: username.trim(),
       email,
       password: hashedPassword,
       image: image,
+      vendors: [],
+      events: [],
     });
     const token = generatetoken(newUser, email);
 
@@ -44,6 +63,8 @@ export const signup = async (
       token,
       user: {
         _id: newUser._id,
+        role: newUser.role,
+        username: newUser.username,
         email: newUser.email,
         image: newUser.image,
       },
