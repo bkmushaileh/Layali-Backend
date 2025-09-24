@@ -6,6 +6,7 @@ import morgan from "morgan";
 import { errorHandler } from "./Middleware/errorHandler";
 import path from "path";
 import { notFound } from "./Middleware/notFound";
+import authRouter from "./API/Auth/auth.routers";
 
 connectDB();
 
@@ -15,6 +16,8 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use(cors());
 app.use(morgan("dev"));
 app.use(express.json());
+
+app.use("/api/auth", authRouter);
 
 app.use(errorHandler);
 app.use(notFound);
