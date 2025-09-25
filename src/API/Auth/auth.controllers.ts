@@ -104,17 +104,3 @@ export const signin = async (
     return next({ status: 500, message: "Something went wrong during signin" });
   }
 };
-export const getAllUsers = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const users = await User.find().select("-password");
-
-    return res.status(200).json(users);
-  } catch (error) {
-    console.log("🚀 ~ getAllUsers ~ error:", error);
-    return next({ status: 500, message: "Something went wrong " });
-  }
-};
