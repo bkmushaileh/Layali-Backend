@@ -7,6 +7,7 @@ import { errorHandler } from "./Middleware/errorHandler";
 import path from "path";
 import { notFound } from "./Middleware/notFound";
 import authRouter from "./API/Auth/auth.routers";
+import eventRouter from "./API/Event/event.router";
 
 connectDB();
 
@@ -18,6 +19,7 @@ app.use(morgan("dev"));
 app.use(express.json());
 
 app.use("/api/auth", authRouter);
+app.use("/api/event", eventRouter);
 
 app.use(errorHandler);
 app.use(notFound);
