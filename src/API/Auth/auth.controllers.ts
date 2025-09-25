@@ -5,7 +5,7 @@ import { invalidCredentialsErrorHandler } from "../../Utils/errors";
 import User from "../../Models/User";
 import { generateHashPassword } from "../../Utils/hashPassword";
 import { generatetoken } from "../../Utils/jwt";
-
+const PORT = 8000;
 const ALLOWED_ROLES = new Set(["Admin", "Vendor", "Normal"]);
 export const signup = async (
   req: Request,
@@ -57,7 +57,9 @@ export const signup = async (
       events: [],
     });
     const token = generatetoken(newUser, email);
-
+    if (req.file) {
+      newUser.image = `http://localhost:${PORT}/uploads/${req.file.filename}`;
+    }
     return res.status(201).json({
       message: "Account created successfully",
       token,
@@ -100,5 +102,19 @@ export const signin = async (
   } catch (err) {
     console.error("signin error:", err);
     return next({ status: 500, message: "Something went wrong during signin" });
+  }
+};
+export const getAllUsers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const users = await User.find().select("-password");
+
+    return res.status(200).json(users);
+  } catch (error) {
+    console.log("🚀 ~ getAllUsers ~ error:", error);
+    return next({ status: 500, message: "Something went wrong " });
   }
 };
