@@ -7,6 +7,8 @@ import { errorHandler } from "./Middleware/errorHandler";
 import path from "path";
 import { notFound } from "./Middleware/notFound";
 import authRouter from "./API/Auth/auth.routers";
+import eventRouter from "./API/Event/event.router";
+
 import userRouter from "./API/Auth/Users/user.routers";
 import vendorRouter from "./API/Vendor/vendor.routers";
 
@@ -21,6 +23,7 @@ app.use(morgan("dev"));
 // app.use(express.urlencoded({ extended: true })); // <-- for form data
 
 app.use("/api/auth", authRouter);
+app.use("/api/event", eventRouter);
 app.use("/api", userRouter);
 app.use("/api/vendor", vendorRouter);
 
