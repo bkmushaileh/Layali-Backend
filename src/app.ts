@@ -7,7 +7,7 @@ import { errorHandler } from "./Middleware/errorHandler";
 import path from "path";
 import { notFound } from "./Middleware/notFound";
 import authRouter from "./API/Auth/auth.routers";
-
+import userRouter from "./API/Auth/Users/user.routers";
 connectDB();
 
 const app = express();
@@ -18,7 +18,7 @@ app.use(morgan("dev"));
 app.use(express.json());
 
 app.use("/api/auth", authRouter);
-
+app.use("/api", userRouter);
 app.use(errorHandler);
 app.use(notFound);
 
