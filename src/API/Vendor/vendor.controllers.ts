@@ -9,8 +9,8 @@ const createVendor = async (
   next: NextFunction
 ) => {
   try {
-    const { user, business_name, bio } = req.body;
-    const logo = req.file ? req.file.path : req.body.logo;
+    const { user, business_name, bio, services } = req.body;
+    const logo = req.file?.filename;
 
     if (!business_name) {
       return res.status(400).json({ error: "Business name is required!" });
@@ -25,10 +25,12 @@ const createVendor = async (
       user,
       business_name,
       bio,
-      logo,
+      logo: req.file?.filename,
+      services,
     });
+    const savedVendor = await vendor.save();
 
-    return res.status(201).json(vendor);
+    return res.status(201).json(savedVendor);
   } catch (error) {
     console.error(error);
     next(error);
@@ -38,10 +40,11 @@ const createVendor = async (
 // GET all Vendors (with populate)
 const getVendors = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const vendors = await Vendor.find().populate("user", "-password"); // hide password if exists
+    const vendors = await Vendor.find()
+      .populate("user", "-password")
+      .populate("services")
+      .populate("categories"); // hide password if exists
     // .populate("events")
-    // .populate("services")
-    // .populate("category")
     // .populate("giftCard");
 
     // if (!vendors) {

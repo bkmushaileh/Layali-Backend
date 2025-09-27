@@ -8,7 +8,10 @@ export const getAllUsers = async (
   next: NextFunction
 ) => {
   try {
-    const users = await User.find().select("-password");
+    const users = await User.find()
+      .select("-password")
+      .populate("events")
+      .populate("vendors");
 
     return res.status(200).json(users);
   } catch (error) {
@@ -18,7 +21,10 @@ export const getAllUsers = async (
 };
 export const getUserById = async (req: Request, res: Response) => {
   try {
-    const user = await User.findById(req.params.id).select("-password");
+    const user = await User.findById(req.params.id)
+      .select("-password")
+      .populate("events")
+      .populate("vendors");
 
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json(user);
