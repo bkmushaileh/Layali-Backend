@@ -14,7 +14,7 @@ export const signup = async (
 ) => {
   try {
     const { email, password, username, role } = req.body || {};
-    const image = req.file ? req.file.path : null;
+    const image = req.file?.filename || null;
     let finalRole = "Normal";
 
     if (!email || !password || !username || !image) {
@@ -58,8 +58,9 @@ export const signup = async (
     });
     const token = generatetoken(newUser, email);
     if (req.file) {
-      newUser.image = `http://localhost:${PORT}/uploads/${req.file.filename}`;
+      newUser.image = req.file.filename; // just filename
     }
+
     return res.status(201).json({
       message: "Account created successfully",
       token,

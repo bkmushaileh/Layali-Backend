@@ -11,7 +11,13 @@ export const getAllUsers = async (
     const users = await User.find()
       .select("-password")
       .populate("events")
-      .populate("vendors");
+      .populate({
+        path: "vendors",
+        populate: {
+          path: "services", // populate services inside each vendor
+          select: "-__v", // optional, to exclude __v field
+        },
+      });
 
     return res.status(200).json(users);
   } catch (error) {
@@ -24,7 +30,13 @@ export const getUserById = async (req: Request, res: Response) => {
     const user = await User.findById(req.params.id)
       .select("-password")
       .populate("events")
-      .populate("vendors");
+      .populate({
+        path: "vendors",
+        populate: {
+          path: "services", // populate services inside each vendor
+          select: "-__v", // optional, to exclude __v field
+        },
+      });
 
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json(user);
