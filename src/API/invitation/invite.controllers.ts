@@ -2,22 +2,19 @@ import { Request, Response } from "express";
 import QRCode from "qrcode";
 import Invite from "../../Models/Invite";
 import InviteTemplate from "../../Models/InviteTemplate";
+import { Event } from "../../Models/Event";
 
 export const createInvite = async (req: Request, res: Response) => {
   try {
     const { event, guestName, guestEmail, inviteTemplate } = req.body;
-    //checking exist email | event
-    const existingInvite = await Invite.findOne({
-      event,
-      guestEmail,
-    });
 
+    const existingInvite = await Invite.findOne({ event, guestEmail });
     if (existingInvite) {
       return res
         .status(400)
         .json({ message: "Guest already invited for this event" });
     }
-    // default temp
+
     let templateToUse = inviteTemplate;
     if (!templateToUse) {
       const defaultTemplate = await InviteTemplate.findOne();
@@ -35,10 +32,15 @@ export const createInvite = async (req: Request, res: Response) => {
 
     await newInvite.save();
 
-    // QRcode gen
     const qrImage = await QRCode.toDataURL(newInvite.qrCodeToken);
     newInvite.qrCodeImage = qrImage;
+
     await newInvite.save();
+
+    await Event.findByIdAndUpdate(event, {
+      $push: { invites: newInvite._id },
+    });
+
     if (inviteTemplate) {
       await InviteTemplate.findByIdAndUpdate(inviteTemplate, {
         $push: { invites: newInvite._id },
@@ -51,7 +53,6 @@ export const createInvite = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Error creating invite" });
   }
 };
-
 export const getAllInvites = async (req: Request, res: Response) => {
   try {
     const invites = await Invite.find()
@@ -68,7 +69,11 @@ export const getInviteById = async (req: Request, res: Response) => {
   try {
     const invite = await Invite.findById(req.params.id)
       .populate("inviteTemplate")
-      .populate("event");
+      .populate({
+        path: "event",
+        populate: { path: "user", select: "username email" },
+      });
+    //here changes ^
 
     if (!invite) {
       return res.status(404).json({ message: "Invite not found" });
@@ -79,7 +84,20 @@ export const getInviteById = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Error fetching invite" });
   }
 };
+export const getInvitesByEvent = async (req: Request, res: Response) => {
+  try {
+    const { eventId } = req.params;
+    console.log("Fetching invites for eventId:", eventId);
+    const invites = await Invite.find({ event: eventId })
+      .populate("inviteTemplate")
+      .populate("event");
 
+    console.log("Invites found:", invites);
+    res.json({ invites });
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching invites" });
+  }
+};
 export const updateInvite = async (req: Request, res: Response) => {
   try {
     const { guestName, guestEmail, rsvpStatus, inviteTemplate } = req.body;

@@ -3,7 +3,7 @@ import { Event } from "../../Models/Event";
 
 const getAllEvent = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const events = await Event.find();
+    const events = await Event.find().populate("invites");
     if (!events.length) {
       return next({ message: "No Event Found!", status: 404 });
     }
@@ -43,15 +43,15 @@ const createEvent = async (req: Request, res: Response, next: NextFunction) => {
       date,
       location,
       //services: services || [],
-      //invites: invites || [],
+      invites: invites || [],
       //giftCards: giftCards || [],
     });
 
-    // const populated = await event.populate([
-    //   "services",
-    //   "invites",
-    //   "giftCards",
-    // ]);
+    const populated = await event.populate([
+      //   "services",
+      "invites",
+      //   "giftCards",
+    ]);
 
     return res.status(201).json({
       message: "Event Created Successfully!",
@@ -75,7 +75,7 @@ const getEventById = async (
     const { id } = req.params;
     if (!id) return next({ status: 400, message: "Event id is required" });
 
-    const event = await Event.findById(id);
+    const event = await Event.findById(id).populate("invites");
 
     if (!event) {
       next({ status: 404, message: "Event Not Found!" });
@@ -128,7 +128,8 @@ const updateEventById = async (
     }
     if (!id) return next({ status: 400, message: "Event id is required" });
 
-    const event = await Event.findById(id);
+    const event = await Event.findById(id).populate(["invites"]);
+
     // .populate(["services", "invites", "giftCards"])
 
     if (!event) {
@@ -153,10 +154,11 @@ const updateEventById = async (
       event!.location = location;
     }
     // if (services !== undefined) event!.services = services;
-    //   if (invites !== undefined) event!.invites = invites;
+    if (invites !== undefined) event!.invites = invites;
     //   if (giftCards !== undefined) event!.giftCards = giftCards;
     await event?.save();
-    //const populated = await event?.populate(["services", "invites", "giftCards"]);
+    const populated = await event?.populate(["invites"]);
+    //  "giftCards","services"
 
     return res.status(200).json({
       message: "Event updated",
