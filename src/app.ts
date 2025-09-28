@@ -7,15 +7,11 @@ import { errorHandler } from "./Middleware/errorHandler";
 import path from "path";
 import { notFound } from "./Middleware/notFound";
 import authRouter from "./API/Auth/auth.routers";
-
 import inviteRouter from "./API/invitation/invite.routes";
 import inviteTemplateRouter from "./API/inviteTemplate/inviteTemplate.routes";
-
 import eventRouter from "./API/Event/event.router";
-
 import userRouter from "./API/Auth/Users/user.routers";
 import vendorRouter from "./API/Vendor/vendor.routers";
-
 
 connectDB();
 
@@ -35,7 +31,6 @@ app.use("/api/inviteTemplate", inviteTemplateRouter);
 app.use("/api/event", eventRouter);
 app.use("/api", userRouter);
 app.use("/api/vendor", vendorRouter);
-
 
 app.use(errorHandler);
 app.use(notFound);
