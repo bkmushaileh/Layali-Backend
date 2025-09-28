@@ -17,8 +17,8 @@ const vendorSchema = new Schema({
   },
   logo: { type: String, required: true },
   // events: [{ type: Schema.ObjectId, ref: "Event" }],
-  // services: [{ type: Schema.ObjectId, ref: "Services" }],
-  // category: [{ type: Schema.ObjectId, ref: "Category" }],
+  services: [{ type: Schema.ObjectId, ref: "Service" }],
+  categories: [{ type: Schema.ObjectId, ref: "Category" }],
   // giftCard: [{ type: Schema.ObjectId, ref: "GiftCard" }],
 });
 

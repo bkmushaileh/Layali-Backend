@@ -265,6 +265,33 @@ const deleteMyEvents = async (
     });
   }
 };
+const getMyEvents = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (req.user?.role === "Admin" || req.user?.role === "Vendor") {
+      return next({
+        status: 403,
+        message: "Admins and Vendors are not allowed to view events",
+      });
+    }
+
+    const events = await Event.find({ user: req.user?._id });
+
+    if (!events.length) {
+      return next({ status: 404, message: "No events found for this user" });
+    }
+
+    return res.status(200).json({
+      message: "My events",
+      events,
+    });
+  } catch (err) {
+    console.error("getMyEvents error:", err);
+    return next({
+      status: 500,
+      message: "Something went wrong during getMyEvents",
+    });
+  }
+};
 
 export {
   getAllEvent,
@@ -273,4 +300,5 @@ export {
   updateEventById,
   deleteEventById,
   deleteMyEvents,
+  getMyEvents,
 };
