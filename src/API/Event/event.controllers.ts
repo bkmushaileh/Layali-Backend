@@ -42,15 +42,15 @@ const createEvent = async (req: Request, res: Response, next: NextFunction) => {
       budget,
       date,
       location,
-      //services: services || [],
+      services: services || [],
       invites: invites || [],
-      //giftCards: giftCards || [],
+      giftCards: giftCards || [],
     });
 
     const populated = await event.populate([
-      //   "services",
+      "services",
       "invites",
-      //   "giftCards",
+      "giftCards",
     ]);
 
     return res.status(201).json({
@@ -128,9 +128,11 @@ const updateEventById = async (
     }
     if (!id) return next({ status: 400, message: "Event id is required" });
 
-    const event = await Event.findById(id).populate(["invites"]);
-
-    // .populate(["services", "invites", "giftCards"])
+    const event = await Event.findById(id).populate([
+      "services",
+      "invites",
+      // "giftCards",
+    ]);
 
     if (!event) {
       next({ status: 404, message: "Event Not Found!" });
@@ -153,9 +155,9 @@ const updateEventById = async (
     if (location !== undefined) {
       event!.location = location;
     }
-    // if (services !== undefined) event!.services = services;
+    if (services !== undefined) event!.services = services;
     if (invites !== undefined) event!.invites = invites;
-    //   if (giftCards !== undefined) event!.giftCards = giftCards;
+    // if (giftCards !== undefined) event!.giftCards = giftCards;
     await event?.save();
     const populated = await event?.populate(["invites"]);
     //  "giftCards","services"

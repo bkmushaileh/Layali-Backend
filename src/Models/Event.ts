@@ -6,7 +6,7 @@ const eventSchema = new Schema(
     budget: { type: Number, min: 0, required: true },
     date: { type: Date, required: true },
     location: { type: String, trim: true, required: true },
-    // services: [{ type: Schema.Types.ObjectId, ref: "Service" }],
+    services: [{ type: Schema.Types.ObjectId, ref: "Service" }],
     invites: [{ type: Schema.Types.ObjectId, ref: "Invite" }],
     // giftCards: [{ type: Schema.Types.ObjectId, ref: "GiftCard" }],
   },
