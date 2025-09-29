@@ -4,6 +4,7 @@ import {
   deleteInvite,
   getAllInvites,
   getInviteById,
+  getInviteByToken,
   getInvitesByEvent,
   updateInvite,
   updateRSVPStatus,
@@ -18,4 +19,5 @@ router.get("/getInviteById/:id", getInviteById);
 router.get("/getInvitesByEvent/:eventId", getInvitesByEvent);
 router.put("/updateInvite/:id", updateInvite);
 router.delete("/deleteInvite/:id", deleteInvite);
+router.get("/token/:token", getInviteByToken);
 export default router;
