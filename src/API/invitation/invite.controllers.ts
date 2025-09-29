@@ -31,10 +31,11 @@ export const createInvite = async (req: Request, res: Response) => {
     });
 
     await newInvite.save();
+    const baseUrl = process.env.FRONTEND_URL || "http://192.168.8.132:3000";
+    const inviteLink = `${baseUrl}/invite/${newInvite.qrCodeToken}`;
 
-    const qrImage = await QRCode.toDataURL(newInvite.qrCodeToken);
+    const qrImage = await QRCode.toDataURL(inviteLink);
     newInvite.qrCodeImage = qrImage;
-
     await newInvite.save();
 
     await Event.findByIdAndUpdate(event, {
@@ -47,7 +48,10 @@ export const createInvite = async (req: Request, res: Response) => {
       });
     }
 
-    res.status(201).json(newInvite);
+    res.status(201).json({
+      ...newInvite.toObject(),
+      inviteLink,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error creating invite" });
@@ -161,5 +165,25 @@ export const deleteInvite = async (req: Request, res: Response) => {
     res.json({ message: "Invite deleted successfully" });
   } catch (err) {
     res.status(500).json({ message: "Error deleting invite" });
+  }
+};
+
+export const getInviteByToken = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+    const invite = await Invite.findOne({ qrCodeToken: token })
+      .populate("inviteTemplate")
+      .populate({
+        path: "event",
+        populate: { path: "user", select: "username email" },
+      });
+
+    if (!invite) {
+      return res.status(404).json({ message: "Invite not found" });
+    }
+
+    res.json(invite);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching invite by token" });
   }
 };
