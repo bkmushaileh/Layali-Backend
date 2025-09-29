@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import User from "../../../Models/User";
+import path from "path";
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const getAllUsers = async (
@@ -14,8 +15,11 @@ export const getAllUsers = async (
       .populate({
         path: "vendors",
         populate: {
-          path: "services", // populate services inside each vendor
-          select: "-__v", // optional, to exclude __v field
+          path: "services",
+          select: "-__v",
+          populate: {
+            path: "categories",
+          },
         },
       });
 
@@ -33,8 +37,11 @@ export const getUserById = async (req: Request, res: Response) => {
       .populate({
         path: "vendors",
         populate: {
-          path: "services", // populate services inside each vendor
-          select: "-__v", // optional, to exclude __v field
+          path: "services",
+          select: "-__v",
+          populate: {
+            path: "categories",
+          },
         },
       });
 
