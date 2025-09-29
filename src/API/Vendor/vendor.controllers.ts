@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import Vendor from "../../Models/Vendor";
 import { errorHandler } from "../../Middleware/errorHandler";
+import User from "../../Models/User";
 
 // CREATE Vendor
 const createVendor = async (
@@ -29,7 +30,9 @@ const createVendor = async (
       services,
     });
     const savedVendor = await vendor.save();
-
+    await User.findByIdAndUpdate(savedVendor.user, {
+      $push: { vendors: savedVendor._id },
+    });
     return res.status(201).json(savedVendor);
   } catch (error) {
     console.error(error);
