@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { Event } from "../../Models/Event";
+import User from "../../Models/User";
 
 const getAllEvent = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -46,6 +47,11 @@ const createEvent = async (req: Request, res: Response, next: NextFunction) => {
       invites: invites || [],
       // giftCards: giftCards || [],
     });
+    await User.findByIdAndUpdate(
+      req.user?._id,
+      { $addToSet: { events: event._id } },
+      { new: true }
+    );
 
     const populated = await event.populate([
       "services",
