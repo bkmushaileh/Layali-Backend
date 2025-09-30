@@ -1,6 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 import { Event } from "../../Models/Event";
 import User from "../../Models/User";
+import { getEventStats } from "../../Utils/eventstats";
+
 
 const getAllEvent = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -294,6 +296,27 @@ const getMyEvents = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
+const getMyEventStats = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user?._id;
+    const stats = await getEventStats(userId!);
+    return res.status(200).json({
+      message: "My event stats",
+      stats,
+    });
+  } catch (err) {
+    console.error("getMyEventStats error:", err);
+    return next({
+      status: 500,
+      message: "Something went wrong during getMyEventStats",
+    });
+  }
+};
+
 export {
   getAllEvent,
   createEvent,
@@ -302,4 +325,5 @@ export {
   deleteEventById,
   deleteMyEvents,
   getMyEvents,
+  getMyEventStats,
 };

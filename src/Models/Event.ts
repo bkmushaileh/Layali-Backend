@@ -12,7 +12,7 @@ const eventSchema = new Schema(
   },
   { timestamps: true }
 );
-
+eventSchema.index({ user: 1, date: 1 });
 export const Event = model("Event", eventSchema);
 export type EventAttrs = InferSchemaType<typeof eventSchema>;
 export type EventDoc = HydratedDocument<EventAttrs>;
