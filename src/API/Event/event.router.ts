@@ -7,6 +7,7 @@ import {
   getAllEvent,
   getEventById,
   getMyEvents,
+  getMyEventStats,
   updateEventById,
 } from "./event.controllers";
 import { authorization } from "../../Middleware/authorization";
@@ -15,6 +16,8 @@ const router = express.Router();
 
 router.get("/", getAllEvent);
 router.post("/", authorization, createEvent);
+router.get("/stats", authorization, getMyEventStats);
+
 router.get("/mine", authorization, getMyEvents);
 router.get("/:id", authorization, getEventById);
 router.put("/:id", authorization, updateEventById);
