@@ -44,13 +44,13 @@ const createEvent = async (req: Request, res: Response, next: NextFunction) => {
       location,
       services: services || [],
       invites: invites || [],
-      giftCards: giftCards || [],
+      // giftCards: giftCards || [],
     });
 
     const populated = await event.populate([
       "services",
       "invites",
-      "giftCards",
+      // "giftCards",
     ]);
 
     return res.status(201).json({
@@ -143,28 +143,21 @@ const updateEventById = async (
         message: "You are not allowed to update this event",
       });
     }
-    if (budget !== null) {
-      event!.budget = budget;
-    }
-    if (date) {
-      event!.date = date;
-    }
-    if (location !== undefined) {
-      event!.location = location;
-    }
-    if (location !== undefined) {
-      event!.location = location;
-    }
-    if (services !== undefined) event!.services = services;
-    if (invites !== undefined) event!.invites = invites;
-    // if (giftCards !== undefined) event!.giftCards = giftCards;
-    await event?.save();
-    const populated = await event?.populate(["invites"]);
-    //  "giftCards","services"
+    const update: any = {};
+    if (budget !== undefined) update.budget = Number(budget);
+    if (date !== undefined) update.date = new Date(date);
+    if (location !== undefined) update.location = String(location).trim();
+    if (services !== undefined) update.services = services;
+    if (invites !== undefined) update.invites = invites;
 
+    const Updatedevent = await Event.findOneAndUpdate(
+      { _id: id, user: req.user?._id },
+      { $set: update },
+      { new: true, runValidators: true }
+    ).populate(["services", "invites"]);
     return res.status(200).json({
       message: "Event updated",
-      event: event,
+      event: Updatedevent,
     });
   } catch (err) {
     console.error("updateEvent error:", err);
