@@ -3,6 +3,7 @@ import { Event } from "../../Models/Event";
 import User from "../../Models/User";
 import { getEventStats } from "../../Utils/eventstats";
 
+
 const getAllEvent = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const events = await Event.find().populate("invites");
