@@ -1,19 +1,15 @@
 import { Types } from "mongoose";
 import { Event } from "../Models/Event";
 
-export async function getEventStats(userId: string | Types.ObjectId) {
-  const uid = typeof userId === "string" ? new Types.ObjectId(userId) : userId;
+type Stats = { total: number; upcoming: number; old: number };
 
+export async function getEventStats(userId: Types.ObjectId): Promise<Stats> {
   const [stats] = await Event.aggregate([
-    { $match: { user: uid } },
+    { $match: { user: userId } },
     {
       $addFields: {
         todayKWT: {
-          $dateTrunc: {
-            date: "$$NOW",
-            unit: "day",
-            timezone: "Asia/Kuwait",
-          },
+          $dateTrunc: { date: "$$NOW", unit: "day", timezone: "Asia/Kuwait" },
         },
       },
     },
