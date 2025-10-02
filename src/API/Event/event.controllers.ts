@@ -3,7 +3,6 @@ import { Event } from "../../Models/Event";
 import User from "../../Models/User";
 import { getEventStats } from "../../Utils/eventstats";
 
-
 const getAllEvent = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const events = await Event.find().populate("invites");
@@ -143,7 +142,7 @@ const updateEventById = async (
     ]);
 
     if (!event) {
-      next({ status: 404, message: "Event Not Found!" });
+      return next({ status: 404, message: "Event Not Found!" });
     }
     if (String(event?.user) !== String(req.user?._id)) {
       return next({
