@@ -46,13 +46,13 @@ const getVendors = async (req: Request, res: Response, next: NextFunction) => {
     const vendors = await Vendor.find()
       .populate("user", "-password")
       .populate("services")
-      .populate("categories"); // hide password if exists
-    // .populate("events")
+      .populate("categories") // hide password if exists
+      .populate("events");
     // .populate("giftCard");
 
-    // if (!vendors) {
-    //   return res.status(404).json({ error: "Vendors not created" });
-    // }
+    if (!vendors || vendors.length === 0) {
+      return res.status(200).json({ message: "No vendors found", data: [] });
+    }
 
     return res.status(200).json(vendors);
   } catch (error) {
@@ -68,13 +68,11 @@ const getVendorById = async (
   next: NextFunction
 ) => {
   try {
-    const vendor = await Vendor.findById(req.params.id).populate(
-      "user",
-      "-password"
-    );
-    // .populate("events")
-    // .populate("services")
-    // .populate("category")
+    const vendor = await Vendor.findById(req.params.id)
+      .populate("user", "-password")
+      .populate("events")
+      .populate("services")
+      .populate("categories");
     // .populate("giftCard");
 
     if (!vendor) {
@@ -84,7 +82,7 @@ const getVendorById = async (
     return res.status(200).json(vendor);
   } catch (error) {
     console.error(error);
-    next(errorHandler);
+    next(error);
   }
 };
 
@@ -102,10 +100,11 @@ const updateVendor = async (
       req.params.id,
       { business_name, bio, logo, events, services, category, giftCard },
       { new: true, runValidators: true }
-    ).populate("user", "-password");
-    // .populate("events")
-    // .populate("services")
-    // .populate("category")
+    )
+      .populate("user", "-password")
+      .populate("events")
+      .populate("services")
+      .populate("categories");
     // .populate("giftCard");
 
     if (!vendor) {

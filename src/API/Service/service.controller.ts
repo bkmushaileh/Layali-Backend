@@ -12,28 +12,60 @@ export const createService = async (
   next: NextFunction
 ) => {
   try {
-    const { name, price, vendor, categories } = req.body;
+    const image = req.file?.filename;
+
+    const { name, price, vendor, categories, description, type, time } =
+      req.body;
+    // if (!name || !vendor || price == null || !image) {
+    //   return next({
+    //     status: 400,
+    //     message: "Name, vendor, image and price are required",
+    //   });
+    // }
+    if (!name || !String(name).trim()) {
+      return next({ status: 400, message: "name is required" });
+    }
+    if (price == null || Number.isNaN(Number(price))) {
+      return next({ status: 400, message: "price must be a number" });
+    }
+    if (!vendor) {
+      return next({ status: 400, message: "vendor is required" });
+    }
+    if (!req.file?.filename) {
+      return next({
+        status: 400,
+        message: "Image is required. Upload a file with field name 'image'.",
+      });
+    }
+    if (req.user?.role !== "Vendor") {
+      return next({ status: 403, message: "Only Vendors can create services" });
+    }
+    const ownsVendor =
+      Array.isArray(req.user.vendors) && req.user?.vendors.includes(vendor);
+    if (!ownsVendor) {
+      return next({ status: 403, message: "You don’t own this vendor" });
+    }
 
     const newService = await Service.create({
       name: name.trim(),
       price,
-      image: req.file?.filename,
+      image,
       vendor,
       categories,
+      description,
+      type,
+      time,
     });
-    //update category m-m realtionship//
-    const newS = new Service(newService);
-    const saved = await newS.save();
-    if (saved.categories?.length) {
+    if (newService.categories?.length) {
       await Category.updateMany(
-        { _id: { $in: saved.categories } },
-        { $push: { services: saved._id } }
+        { _id: { $in: newService.categories } },
+        { $addToSet: { services: newService._id } }
       );
     }
-    // update the vendor 1-m realtionship
-    await Vendor.findByIdAndUpdate(saved.vendor, {
-      $push: { services: saved._id },
+    await Vendor.findByIdAndUpdate(vendor, {
+      $push: { services: newService._id },
     });
+
     return res.status(201).json({
       message: "Service created successfully",
       service: newService,
