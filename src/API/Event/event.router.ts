@@ -5,6 +5,7 @@ import {
   deleteAllEvents,
   deleteEventById,
   deleteMyEvents,
+  deleteServiceFromEvent,
   getAllEvent,
   getEventById,
   getEventServices,
@@ -28,6 +29,11 @@ router.get("/mine", authorization, getMyEvents);
 
 router.get("/:id", authorization, getEventById);
 router.put("/:id", authorization, updateEventById);
+router.delete(
+  "/:eventId/services/:serviceId",
+  authorization,
+  deleteServiceFromEvent
+);
 router.delete("/", authorization, deleteAllEvents);
 router.delete("/mine", authorization, deleteMyEvents);
 router.delete("/:id", authorization, deleteEventById);
