@@ -7,7 +7,7 @@ import Service from "../../Models/Service";
 
 const getAllEvent = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const events = await Event.find().populate("invites");
+    const events = await Event.find().populate(["invites", "services"]);
     if (!events.length) {
       return next({ message: "No Event Found!", status: 404 });
     }
@@ -84,10 +84,10 @@ const getEventById = async (
     const { id } = req.params;
     if (!id) return next({ status: 400, message: "Event id is required" });
 
-    const event = await Event.findById(id).populate("invites");
+    const event = await Event.findById(id).populate(["invites", "services"]);
 
     if (!event) {
-      next({ status: 404, message: "Event Not Found!" });
+      return next({ status: 404, message: "Event Not Found!" });
     }
     const role = req.user?.role;
     if (role == "Admin" || role == "Vendor") {
@@ -197,7 +197,7 @@ const deleteEventById = async (
     const event = await Event.findById(id);
 
     if (!event) {
-      next({ status: 404, message: "Event Not Found!" });
+      return next({ status: 404, message: "Event Not Found!" });
     }
     if (String(event?.user) !== String(req.user?._id)) {
       return next({
@@ -278,7 +278,10 @@ const getMyEvents = async (req: Request, res: Response, next: NextFunction) => {
       });
     }
 
-    const events = await Event.find({ user: req.user?._id });
+    const events = await Event.find({ user: req.user?._id }).populate([
+      "invites",
+      "services",
+    ]);
 
     if (!events.length) {
       return next({ status: 404, message: "No events found for this user" });
@@ -415,7 +418,46 @@ const addServiceToEvent = async (
     next({ status: 500, message: "Failed to add service" });
   }
 };
+
+const deleteServiceFromEvent = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { eventId, serviceId } = req.params;
+
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return next({ status: 404, message: "Event not found" });
+    }
+    if (String(event.user) !== String(req.user?._id)) {
+      return next({
+        status: 403,
+        message: "You are not allowed to update this event",
+      });
+    }
+
+    const updated = await Event.findByIdAndUpdate(
+      eventId,
+      { $pull: { services: new Types.ObjectId(serviceId) } },
+      { new: true }
+    ).populate("services");
+
+    return res.status(200).json({
+      message: "Service removed from event",
+      event: updated,
+    });
+  } catch (err) {
+    console.error("removeServiceFromEvent error:", err);
+    return next({
+      status: 500,
+      message: "Something went wrong while removing service from event",
+    });
+  }
+};
 export {
+  deleteServiceFromEvent,
   addServiceToEvent,
   getEventServices,
   listEventsWithServiceCount,
