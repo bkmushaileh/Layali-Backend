@@ -2,6 +2,8 @@ import { NextFunction, Request, Response } from "express";
 import { Event } from "../../Models/Event";
 import User from "../../Models/User";
 import { getEventStats } from "../../Utils/eventstats";
+import { Types } from "mongoose";
+import Service from "../../Models/Service";
 
 const getAllEvent = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -316,7 +318,107 @@ const getMyEventStats = async (
   }
 };
 
+const listEventsWithServiceCount = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const userId = req.user?._id;
+  return Event.aggregate([
+    { $match: { user: new Types.ObjectId(userId) } },
+    {
+      $addFields: {
+        servicesCount: { $size: { $ifNull: ["$services", []] } },
+      },
+    },
+    { $sort: { date: 1 } },
+  ]);
+};
+
+const getEventServices = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user?._id;
+    const { id } = req.params;
+
+    const event = await Event.findOne({ _id: id, user: userId }).populate({
+      path: "services",
+      select: "name price image type time description",
+    });
+
+    if (!event) return next({ status: 404, message: "Event not found" });
+
+    const services = event.services ?? [];
+    return res
+      .status(200)
+      .json({ _id: event._id, servicesCount: services.length, services });
+  } catch (err) {
+    return next({ status: 500, message: "Failed to get event services" });
+  }
+};
+
+const addServiceToEvent = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user?._id;
+    const { id } = req.params;
+    const { serviceId } = req.body;
+    const event = await Event.findOne({ _id: id, user: userId }).populate(
+      "services"
+    );
+    if (!event) return next({ status: 404, message: "Event not found" });
+
+    const service = await Service.findById(serviceId);
+    if (!service) return next({ status: 404, message: "Service not found" });
+
+    const currentTotal = event.services.reduce(
+      (sum, s: any) => sum + Number(s.price || 0),
+      0
+    );
+    const newTotal = currentTotal + Number(service.price || 0);
+
+    if (newTotal > event.budget) {
+      return next({
+        status: 400,
+        message: "Adding this service exceeds your event budget",
+      });
+    }
+    const updated = await Event.findOneAndUpdate(
+      { _id: id, user: userId },
+      { $addToSet: { services: new Types.ObjectId(serviceId) } },
+      { new: true }
+    ).populate({
+      path: "services",
+      select: "name price image type time description",
+    });
+
+    if (!updated) return next({ status: 404, message: "Event not found" });
+
+    return res.status(200).json({
+      message: "Service added",
+      event: updated,
+      totals: {
+        budget: Number(event.budget || 0),
+        previousTotal: currentTotal,
+        added: Number(service.price || 0),
+        newTotal,
+        remaining: Number(event.budget || 0) - newTotal,
+      },
+    });
+  } catch (e) {
+    next({ status: 500, message: "Failed to add service" });
+  }
+};
 export {
+  addServiceToEvent,
+  getEventServices,
+  listEventsWithServiceCount,
   getAllEvent,
   createEvent,
   getEventById,
