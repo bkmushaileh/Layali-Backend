@@ -37,14 +37,14 @@ export const createService = async (
         message: "Image is required. Upload a file with field name 'image'.",
       });
     }
-    if (req.user?.role !== "Vendor") {
-      return next({ status: 403, message: "Only Vendors can create services" });
-    }
-    const ownsVendor =
-      Array.isArray(req.user.vendors) && req.user?.vendors.includes(vendor);
-    if (!ownsVendor) {
-      return next({ status: 403, message: "You don’t own this vendor" });
-    }
+    // if (req.user?.role !== "Vendor") {
+    //   return next({ status: 403, message: "Only Vendors can create services" });
+    // }
+    // const ownsVendor =
+    //   Array.isArray(req.user.vendors) && req.user?.vendors.includes(vendor);
+    // if (!ownsVendor) {
+    //   return next({ status: 403, message: "You don’t own this vendor" });
+    // }
 
     const newService = await Service.create({
       name: name.trim(),
