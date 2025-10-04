@@ -13,11 +13,11 @@ import {
 
 const router = Router();
 
-router.post("/", authorization, upload.single("image"), createService); // Create
+router.post("/", upload.single("image"), createService); // Create
 router.get("/", getAllServices);
 router.delete("/deleteAll", deleteAllservices);
 router.get("/:id", getServiceById);
 router.put("/update/:id", updateService);
-router.delete("delete/:id", deleteService);
+router.delete("/delete/:id", deleteService);
 
 export default router;
