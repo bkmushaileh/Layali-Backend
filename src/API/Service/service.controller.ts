@@ -138,8 +138,15 @@ export const updateService = async (
   next: NextFunction
 ) => {
   try {
-    const { name, price, vendor, categories } = req.body;
-    const updateData: any = { name, price, vendor, categories };
+    const { name, price, vendor, categories, description, image } = req.body;
+    const updateData: any = {
+      name,
+      price,
+      vendor,
+      categories,
+      description,
+      image: req.file?.filename || image,
+    };
 
     if (req.file) {
       updateData.image = req.file?.filename;
