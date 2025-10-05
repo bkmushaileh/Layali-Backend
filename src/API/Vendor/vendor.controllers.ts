@@ -10,7 +10,7 @@ const createVendor = async (
   next: NextFunction
 ) => {
   try {
-    const { user, business_name, bio, services } = req.body;
+    const { user, business_name, bio, services, categories } = req.body;
     const logo = req.file?.filename;
 
     if (!business_name) {
@@ -28,6 +28,7 @@ const createVendor = async (
       bio,
       logo: req.file?.filename,
       services,
+      categories,
     });
     const savedVendor = await vendor.save();
     await User.findByIdAndUpdate(savedVendor.user, {
