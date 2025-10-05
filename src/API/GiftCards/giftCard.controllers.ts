@@ -105,3 +105,22 @@ export const redeemGiftCard = async (req: Request, res: Response) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+export const getGiftCardsByUser = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    const cards = await GiftCard.find({ couple: userId })
+      .populate("sender", "name email")
+      .populate("event", "title date");
+
+    if (!cards.length)
+      return res
+        .status(404)
+        .json({ message: "No gift cards found for this user" });
+
+    res.status(200).json(cards);
+  } catch (err: any) {
+    res.status(500).json({ message: err.message });
+  }
+};
