@@ -15,6 +15,7 @@ import vendorRouter from "./API/Vendor/vendor.routers";
 import giftCardRouter from "./API/GiftCards/giftCard.router";
 import serviceRouter from "./API/Service/service.routers";
 import categoryRouter from "./API/Category/category.routers";
+import notificationRoutes from "./API/Notification/notification.routers";
 
 connectDB();
 
@@ -38,6 +39,7 @@ app.use("/api/giftcards", giftCardRouter);
 
 app.use("/api/service", serviceRouter);
 app.use("/api/category", categoryRouter);
+app.use("/api/notifications", notificationRoutes);
 
 app.use(errorHandler);
 app.use(notFound);

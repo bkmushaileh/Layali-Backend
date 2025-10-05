@@ -15,7 +15,7 @@ const router = Router();
 router.post("/", authorization, upload.single("logo"), createVendor); // Create
 router.get("/", getVendors); // Get all
 router.get("/:id", getVendorById); // Get one
-router.put("/:id", updateVendor); // Update
+router.put("/:id", authorization, upload.single("logo"), updateVendor); // Update
 router.delete("/:id", deleteVendor); // Delete one
 router.delete("/", deleteAllVendors); // Delete all (optional)
 

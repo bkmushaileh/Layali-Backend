@@ -68,6 +68,7 @@ const getVendorById = async (
   next: NextFunction
 ) => {
   try {
+    console.log("req param", req.params.id);
     const vendor = await Vendor.findById(req.params.id)
       .populate("user", "-password")
       .populate("events")
@@ -93,12 +94,29 @@ const updateVendor = async (
   next: NextFunction
 ) => {
   try {
-    const { business_name, bio, logo, events, services, category, giftCard } =
+    console.log("📩 req.body:", req.body);
+    console.log("📸 req.file:", req.file);
+    const { business_name, bio, events, services, category, giftCard } =
       req.body;
+
+    let logoUrl = req.body.logo;
+    if (req.file) {
+      logoUrl = `${req.protocol}://${req.get("host")}/uploads/${
+        req.file.filename
+      }`;
+    }
 
     const vendor = await Vendor.findByIdAndUpdate(
       req.params.id,
-      { business_name, bio, logo, events, services, category, giftCard },
+      {
+        business_name,
+        bio,
+        logo: logoUrl,
+        events,
+        services,
+        category,
+        giftCard,
+      },
       { new: true, runValidators: true }
     )
       .populate("user", "-password")
