@@ -2,8 +2,18 @@ import { NextFunction, Request, Response } from "express";
 import { Event } from "../../Models/Event";
 import User from "../../Models/User";
 import { getEventStats } from "../../Utils/eventstats";
-import { Types } from "mongoose";
+import { FlattenMaps, Types } from "mongoose";
 import Service from "../../Models/Service";
+import { env } from "../../Config/config";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import {
+  fallbackCheapest,
+  respondWithFallback,
+  safeParseJSON,
+  SuggestionsBody,
+} from "../../Utils/gemini";
+
+const ai = new GoogleGenerativeAI(env.GEMINI_API_KEY!);
 
 const getAllEvent = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -456,6 +466,193 @@ const deleteServiceFromEvent = async (
     });
   }
 };
+
+export const createSuggestions = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id: eventId } = req.params;
+    if (!eventId) return next({ status: 400, message: "Event id is required" });
+
+    const role = req.user?.role;
+    if (role === "Admin" || role === "Vendor") {
+      return next({
+        status: 403,
+        message: "Admins and Vendors are not allowed to request suggestions",
+      });
+    }
+
+    const body = (req.body || {}) as SuggestionsBody;
+    const requiredCategories = Array.isArray(body.requiredCategories)
+      ? body.requiredCategories
+      : [];
+
+    const event = await Event.findById(eventId).lean();
+    if (!event) return next({ status: 404, message: "Event not found" });
+    if (String(event.user) !== String(req.user?._id)) {
+      return next({
+        status: 403,
+        message: "You are not allowed to use this event",
+      });
+    }
+
+    const budgetBufferPercent = 5;
+    const limitForAI = 50;
+
+    const hardBudget = event.budget ? Number(event.budget) : null;
+
+    const query: any = {};
+    if (requiredCategories.length)
+      query.categories = { $in: requiredCategories };
+    if (hardBudget) {
+      const cap = Math.floor(hardBudget * (1 + budgetBufferPercent / 100));
+      query.price = { $lte: cap };
+    }
+
+    const candidates = await Service.find(query)
+      .select("name price image type time description categories vendor")
+      .limit(limitForAI)
+      .lean();
+
+    if (!candidates.length) {
+      return res.status(200).json({
+        strategy: "fallback",
+        budget: hardBudget,
+        items: [],
+        totalPrice: 0,
+        rationale: "No services matched filters.",
+        notes: hardBudget
+          ? `Price cap used: ~${Math.floor(
+              hardBudget * (1 + budgetBufferPercent / 100)
+            )}`
+          : undefined,
+      });
+    }
+
+    const model = ai.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const generationConfig = { responseMimeType: "application/json" };
+
+    const sysPrompt = `
+You help select the best set of event services under a hard budget if provided.
+Rules:
+- If "hardBudget" is a number, never exceed it.
+- Prefer better value (lower price within budget).
+Return ONLY JSON with this shape:
+{
+  "selection": [ { "_id": "string", "reason": "short" } ],
+  "totalPrice": number,
+  "rationale": "short paragraph",
+  "notes": "optional"
+}
+`;
+
+    const userPayload = {
+      budget: hardBudget,
+      candidates: candidates.map((c) => ({
+        _id: String(c._id),
+        name: c.name,
+        price: Number(c.price || 0),
+        categories: (c as any).categories ?? null,
+        type: (c as any).type ?? null,
+      })),
+    };
+    let text: string;
+    try {
+      const result = await model.generateContent({
+        contents: [
+          { role: "user", parts: [{ text: sysPrompt }] },
+          { role: "user", parts: [{ text: JSON.stringify(userPayload) }] },
+        ],
+        generationConfig,
+      });
+      text = result.response.text();
+      if (!text) throw new Error("No response text from Gemini");
+    } catch (e: any) {
+      console.error("Gemini error:", e?.message || e);
+      return await respondWithFallback(
+        res,
+        candidates,
+        hardBudget,
+        "Gemini unavailable; used fallback."
+      );
+    }
+
+    const json = safeParseJSON(String(text).trim());
+    if (!json || !Array.isArray(json.selection)) {
+      return await respondWithFallback(
+        res,
+        candidates,
+        hardBudget,
+        "Invalid AI response; used fallback."
+      );
+    }
+
+    const priceMap = new Map(
+      candidates.map((c) => [String(c._id), Number(c.price || 0)])
+    );
+    let total = 0;
+    const trimmedSelection: Array<{ _id: string; reason?: string }> = [];
+    for (const item of json.selection) {
+      const p = priceMap.get(String(item._id)) ?? 0;
+      if (!hardBudget || total + p <= hardBudget) {
+        trimmedSelection.push({
+          _id: String(item._id),
+          reason: item.reason || "AI-picked",
+        });
+        total += p;
+      } else {
+        break;
+      }
+    }
+
+    if (!trimmedSelection.length) {
+      return await respondWithFallback(
+        res,
+        candidates,
+        hardBudget,
+        "Invalid AI response; used fallback."
+      );
+    }
+
+    const selectedIds = trimmedSelection.map((s) => s._id);
+    const selectedDocs = await Service.find({ _id: { $in: selectedIds } })
+      .select("name price image type vendor")
+      .lean();
+
+    const items = trimmedSelection.map((sel) => {
+      const doc = selectedDocs.find((d) => String(d._id) === sel._id);
+
+      return {
+        _id: sel._id,
+        name: doc?.name,
+        price: doc?.price,
+        type: doc?.type,
+        image: doc?.image,
+        reason: sel.reason,
+      };
+    });
+    console.log(items[0]);
+
+    return res.status(200).json({
+      strategy: "gemini",
+      budget: hardBudget,
+      selection: trimmedSelection,
+      items,
+      totalPrice: total,
+      rationale: json.rationale || "AI-ranked selection.",
+      notes: json.notes,
+    });
+  } catch (err) {
+    console.error("createSuggestions error:", err);
+    return next({
+      status: 500,
+      message: "Something went wrong during createSuggestions",
+    });
+  }
+};
+
 export {
   deleteServiceFromEvent,
   addServiceToEvent,
