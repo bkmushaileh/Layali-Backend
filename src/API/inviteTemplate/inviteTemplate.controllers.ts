@@ -18,7 +18,7 @@ const toTagsArray = (tags: unknown): string[] | undefined => {
 };
 export const createInviteTemplate = async (req: Request, res: Response) => {
   try {
-    const { event, subtitle, tags } = req.body;
+    const { event, subtitle, tags, title } = req.body;
     if (!req.file) {
       return res.status(400).json({ message: "Background image is required" });
     }
@@ -28,6 +28,7 @@ export const createInviteTemplate = async (req: Request, res: Response) => {
       background: relativePath,
       event: event || null,
       subtitle: subtitle || undefined,
+      title: title || undefined,
       tags: toTagsArray(tags) || undefined,
     });
     await newTemplate.save();
