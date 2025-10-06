@@ -7,6 +7,7 @@ const inviteTemplateSchema = new Schema(
     event: { type: Schema.Types.ObjectId, ref: "Event" },
     subtitle: { type: String, required: false },
     title: { type: String, required: false },
+
     tags: [{ type: String }],
   },
   { timestamps: true }

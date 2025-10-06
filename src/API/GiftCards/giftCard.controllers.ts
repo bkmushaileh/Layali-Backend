@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import GiftCard from "../../Models/GiftCard";
+import { Event } from "../../Models/Event";
 
 import User from "../../Models/User";
 
@@ -83,25 +84,49 @@ export const deleteGiftCard = async (req: Request, res: Response) => {
 
 export const redeemGiftCard = async (req: Request, res: Response) => {
   try {
-    const card = await GiftCard.findById(req.params.id);
-    if (!card) return res.status(404).json({ message: "Gift card not found" });
+    console.log("🔹 Incoming redeem:", req.params.id, req.body);
 
-    if (card.status !== "active")
+    const card = await GiftCard.findById(req.params.id);
+    if (!card) {
+      console.log("❌ Card not found");
+      return res.status(404).json({ message: "Gift card not found" });
+    }
+
+    console.log("🟢 Card found:", card.status, "Amount:", card.amount);
+
+    if (card.status !== "active") {
+      console.log("⚠️ Card not active:", card.status);
       return res.status(400).json({ message: `Gift card is ${card.status}` });
+    }
 
     if (card.expirationDate && card.expirationDate < new Date()) {
       card.status = "expired";
       await card.save();
+      console.log("⚠️ Card expired");
       return res.status(400).json({ message: "Gift card expired" });
+    }
+
+    const event = await Event.findById(card.event);
+    if (event) {
+      event.budget = Math.max(0, event.budget - card.amount);
+      await event.save();
+      console.log("💰 Event budget updated:", event.budget);
     }
 
     card.status = "redeemed";
     card.redeemedAt = new Date();
-    card.redeemedBy = req.body.redeemedBy;
+    card.redeemedBy = req.body.redeemedBy || null;
     await card.save();
 
-    res.status(200).json({ message: "Gift card redeemed", card });
+    console.log("✅ Redeem successful");
+    res.status(200).json({
+      message: "Gift card redeemed ✅",
+      cardAmount: card.amount,
+      updatedBudget: event ? event.budget : null,
+      card,
+    });
   } catch (err: any) {
+    console.error("💥 Error in redeemGiftCard:", err);
     res.status(500).json({ message: err.message });
   }
 };
