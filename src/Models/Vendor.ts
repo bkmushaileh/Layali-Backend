@@ -2,6 +2,7 @@ import { HydratedDocument, InferSchemaType, model, Schema } from "mongoose";
 
 const vendorSchema = new Schema({
   user: { type: Schema.ObjectId, ref: "User", required: true },
+
   business_name: {
     type: String,
     required: true,
