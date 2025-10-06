@@ -37,14 +37,6 @@ export const createService = async (
         message: "Image is required. Upload a file with field name 'image'.",
       });
     }
-    // if (req.user?.role !== "Vendor") {
-    //   return next({ status: 403, message: "Only Vendors can create services" });
-    // }
-    // const ownsVendor =
-    //   Array.isArray(req.user.vendors) && req.user?.vendors.includes(vendor);
-    // if (!ownsVendor) {
-    //   return next({ status: 403, message: "You don’t own this vendor" });
-    // }
 
     const newService = await Service.create({
       name: name.trim(),
@@ -138,12 +130,26 @@ export const updateService = async (
   next: NextFunction
 ) => {
   try {
-    const { name, price, vendor, categories } = req.body;
-    const updateData: any = { name, price, vendor, categories };
+    const { name, price, vendor, categories, description } = req.body;
 
-    if (req.file) {
-      updateData.image = req.file?.filename;
+    let imageFileName = req.file?.filename;
+
+    if (!imageFileName) {
+      const existingService = await Service.findById(req.params.id);
+      if (!existingService) {
+        return next({ status: 404, message: "Service not found" });
+      }
+      imageFileName = existingService.image;
     }
+
+    const updateData: any = {
+      name,
+      price,
+      vendor,
+      categories,
+      description,
+      image: imageFileName,
+    };
 
     const updatedService = await Service.findByIdAndUpdate(
       req.params.id,
@@ -154,7 +160,7 @@ export const updateService = async (
     if (!updatedService) {
       return next({ status: 404, message: "Service not found" });
     }
-
+    console.log(imageFileName);
     return res.status(200).json({
       message: "Service updated successfully",
       service: updatedService,
