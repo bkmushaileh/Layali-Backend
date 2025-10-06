@@ -102,9 +102,7 @@ const updateVendor = async (
 
     let logoUrl = req.body.logo;
     if (req.file) {
-      logoUrl = `${req.protocol}://${req.get("host")}/uploads/${
-        req.file.filename
-      }`;
+      logoUrl = `${req.file.filename}`;
     }
 
     const vendor = await Vendor.findByIdAndUpdate(
