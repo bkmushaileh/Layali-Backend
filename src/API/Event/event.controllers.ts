@@ -513,10 +513,19 @@ export const createSuggestions = async (
 
     const candidates = await Service.find(query)
       .select("name price image type time description categories vendor")
+      .populate("vendor", "business_name logo _id")
       .limit(limitForAI)
       .lean();
 
-    if (!candidates.length) {
+    const aiCandidates = candidates.map((c) => ({
+      _id: String(c._id),
+      name: c.name,
+      price: Number(c.price || 0),
+      categories: (c as any).categories ?? null,
+      type: (c as any).type ?? null,
+    }));
+
+    if (!aiCandidates.length) {
       return res.status(200).json({
         strategy: "fallback",
         budget: hardBudget,
@@ -539,6 +548,7 @@ You help select the best set of event services under a hard budget if provided.
 Rules:
 - If "hardBudget" is a number, never exceed it.
 - Prefer better value (lower price within budget).
+
 Return ONLY JSON with this shape:
 {
   "selection": [ { "_id": "string", "reason": "short" } ],
@@ -550,13 +560,7 @@ Return ONLY JSON with this shape:
 
     const userPayload = {
       budget: hardBudget,
-      candidates: candidates.map((c) => ({
-        _id: String(c._id),
-        name: c.name,
-        price: Number(c.price || 0),
-        categories: (c as any).categories ?? null,
-        type: (c as any).type ?? null,
-      })),
+      candidates: aiCandidates,
     };
     let text: string;
     try {
@@ -619,6 +623,7 @@ Return ONLY JSON with this shape:
     const selectedIds = trimmedSelection.map((s) => s._id);
     const selectedDocs = await Service.find({ _id: { $in: selectedIds } })
       .select("name price image type vendor")
+      .populate("vendor", "business_name logo _id")
       .lean();
 
     const items = trimmedSelection.map((sel) => {
@@ -631,6 +636,13 @@ Return ONLY JSON with this shape:
         type: doc?.type,
         image: doc?.image,
         reason: sel.reason,
+        vendor: doc?.vendor
+          ? {
+              _id: String((doc.vendor as any)._id),
+              business_name: (doc.vendor as any).business_name,
+              logo: (doc.vendor as any).logo ?? null,
+            }
+          : null,
       };
     });
     console.log(items[0]);
