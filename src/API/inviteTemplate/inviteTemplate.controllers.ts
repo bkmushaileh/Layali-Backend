@@ -1,9 +1,24 @@
 import { Request, Response } from "express";
 import InviteTemplate from "../../Models/InviteTemplate";
 
+const toTagsArray = (tags: unknown): string[] | undefined => {
+  if (tags == null) return undefined;
+  if (Array.isArray(tags))
+    return tags
+      .map(String)
+      .map((t) => t.trim())
+      .filter(Boolean);
+  if (typeof tags === "string") {
+    return tags
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+  }
+  return undefined;
+};
 export const createInviteTemplate = async (req: Request, res: Response) => {
   try {
-    const { event } = req.body;
+    const { event, subtitle, tags } = req.body;
     if (!req.file) {
       return res.status(400).json({ message: "Background image is required" });
     }
@@ -12,6 +27,8 @@ export const createInviteTemplate = async (req: Request, res: Response) => {
     const newTemplate = new InviteTemplate({
       background: relativePath,
       event: event || null,
+      subtitle: subtitle || undefined,
+      tags: toTagsArray(tags) || undefined,
     });
     await newTemplate.save();
 

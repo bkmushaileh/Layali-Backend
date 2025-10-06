@@ -5,6 +5,8 @@ const inviteTemplateSchema = new Schema(
     invites: [{ type: Schema.Types.ObjectId, ref: "Invite" }],
     background: { type: String, required: true },
     event: { type: Schema.Types.ObjectId, ref: "Event" },
+    subtitle: { type: String, required: false },
+    tags: [{ type: String }],
   },
   { timestamps: true }
 );
