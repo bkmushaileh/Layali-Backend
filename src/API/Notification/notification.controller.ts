@@ -48,6 +48,7 @@ export const getUserNotifications = async (req: Request, res: Response) => {
     const notifications = await Notification.find({ user: userId })
       .populate("vendor", "business_name")
       .sort({ createdAt: -1 });
+    console.log(notifications);
 
     res.status(200).json(notifications);
   } catch (err) {

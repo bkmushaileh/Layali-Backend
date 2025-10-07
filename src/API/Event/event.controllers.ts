@@ -12,6 +12,8 @@ import {
   safeParseJSON,
   SuggestionsBody,
 } from "../../Utils/gemini";
+import Notification from "../../Models/Notification";
+import Vendor from "../../Models/Vendor";
 
 const ai = new GoogleGenerativeAI(env.GEMINI_API_KEY!);
 
@@ -387,7 +389,7 @@ const addServiceToEvent = async (
     );
     if (!event) return next({ status: 404, message: "Event not found" });
 
-    const service = await Service.findById(serviceId);
+    const service = await Service.findById(serviceId).populate("vendor");
     if (!service) return next({ status: 404, message: "Service not found" });
 
     const currentTotal = event.services.reduce(
@@ -411,8 +413,18 @@ const addServiceToEvent = async (
       select: "name price image type time description",
     });
 
-    if (!updated) return next({ status: 404, message: "Event not found" });
+    const vendor = await Vendor.findById(service.vendor);
+    if (!vendor) return next({ status: 404, message: "Vendor not found" });
 
+    if (!updated) return next({ status: 404, message: "Event not found" });
+    // create the notication
+    await Notification.create({
+      user: vendor?.user,
+      vendor: service.vendor,
+      title: "New Service Booked",
+      message: `A user just booked your service: ${service.name}`,
+      type: "success",
+    });
     return res.status(200).json({
       message: "Service added",
       event: updated,
