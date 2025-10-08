@@ -44,11 +44,12 @@ export const getUserNotifications = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     console.log("📬 Fetching notifications for user:", userId);
-
-    const notifications = await Notification.find({ user: userId })
-      .populate("vendor", "business_name")
-      .sort({ createdAt: -1 });
-
+    console.log(userId);
+    console.log(req.user?.id);
+    const notifications = await Notification.find({ user: userId });
+    // .populate("vendor", "business_name")
+    // .sort({ createdAt: -1 });
+    console.log(notifications);
     res.status(200).json(notifications);
   } catch (err) {
     console.error("❌ Error fetching notifications:", err);
